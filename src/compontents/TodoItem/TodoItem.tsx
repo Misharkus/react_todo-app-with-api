@@ -2,7 +2,7 @@
 import classNames from 'classnames';
 import { Todo } from '../../types/Todo';
 import { useState } from 'react';
-import { TodoEdit } from '../TodoEdit/TodoEdit';
+import { TodoEdit } from '../TodoEdit';
 
 type TodoItemProps = {
   todo: Todo;

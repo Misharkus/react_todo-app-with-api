@@ -11,8 +11,9 @@ import {
 } from './api/todos';
 import { Filters, Todo } from './types/Todo';
 import classNames from 'classnames';
-import { TodoItem } from './compontents/TodoItem';
-import { CSSTransition, TransitionGroup } from 'react-transition-group';
+import { ErrorNotification } from './compontents/ErrorNotification';
+import { Filter } from './compontents/Filter';
+import { TodoList } from './compontents/TodoList';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -193,29 +194,13 @@ export const App: React.FC = () => {
           </form>
         </header>
 
-        <section className="todoapp__main" data-cy="TodoList">
-          <TransitionGroup>
-            {filteredTodos.map(todo => (
-              <CSSTransition key={todo.id} timeout={300} classNames="item">
-                <TodoItem
-                  todo={todo}
-                  onDelete={handleDeleteTodo}
-                  loader={waitingTodos.includes(todo.id)}
-                  onUpdate={handleEditTodo}
-                />
-              </CSSTransition>
-            ))}
-            {tempTodo && (
-              <CSSTransition
-                key={tempTodo.id}
-                timeout={300}
-                classNames="temp-item"
-              >
-                <TodoItem todo={tempTodo} loader={true} onDelete={() => {}} />
-              </CSSTransition>
-            )}
-          </TransitionGroup>
-        </section>
+        <TodoList
+          todos={filteredTodos}
+          waitingTodos={waitingTodos}
+          tempTodo={tempTodo}
+          onDelete={handleDeleteTodo}
+          onUpdate={handleEditTodo}
+        />
 
         {/* Hide the footer if there are no todos */}
         {todos.length > 0 && (
@@ -225,40 +210,7 @@ export const App: React.FC = () => {
             </span>
 
             {/* Active link should have the 'selected' class */}
-            <nav className="filter" data-cy="Filter">
-              <a
-                href="#/"
-                className={classNames('filter__link', {
-                  selected: filterBy === Filters.all,
-                })}
-                data-cy="FilterLinkAll"
-                onClick={() => setFilterBy(Filters.all)}
-              >
-                All
-              </a>
-
-              <a
-                href="#/active"
-                className={classNames('filter__link', {
-                  selected: filterBy === Filters.active,
-                })}
-                data-cy="FilterLinkActive"
-                onClick={() => setFilterBy(Filters.active)}
-              >
-                Active
-              </a>
-
-              <a
-                href="#/completed"
-                className={classNames('filter__link', {
-                  selected: filterBy === Filters.completed,
-                })}
-                data-cy="FilterLinkCompleted"
-                onClick={() => setFilterBy(Filters.completed)}
-              >
-                Completed
-              </a>
-            </nav>
+            <Filter filterBy={filterBy} onFilterChange={setFilterBy} />
 
             {/* this button should be disabled if there are no completed todos */}
             <button
@@ -275,33 +227,10 @@ export const App: React.FC = () => {
       </div>
 
       {/* DON'T use conditional rendering to hide the notification */}
-      {/* Add the 'hidden' class to hide the message smoothly */}
-      <div
-        data-cy="ErrorNotification"
-        className={classNames(
-          'notification is-danger is-light has-text-weight-normal',
-          {
-            hidden: !errorMessage,
-          },
-        )}
-      >
-        <button
-          data-cy="HideErrorButton"
-          type="button"
-          className="delete"
-          onClick={() => setErrorMessage('')}
-        />
-        {/* show only one message at a time */}
-        {errorMessage}
-        {/* <br />
-        Title should not be empty
-        <br />
-        Unable to add a todo
-        <br />
-        Unable to delete a todo
-        <br />
-        Unable to update a todo */}
-      </div>
+      <ErrorNotification
+        errorMessage={errorMessage}
+        resetError={() => setErrorMessage('')}
+      />
     </div>
   );
 };
