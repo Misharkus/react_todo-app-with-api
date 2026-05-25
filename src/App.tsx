@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 /* eslint-disable jsx-a11y/control-has-associated-label */
-import React, { FormEvent, useEffect, useState } from 'react';
+import React, { FormEvent, useEffect, useRef, useState } from 'react';
 import { UserWarning } from './UserWarning';
 import {
   createTodo,
@@ -22,8 +22,8 @@ export const App: React.FC = () => {
   const [newTitle, setNewTitle] = useState('');
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
   const [waitingTodos, setWaitingTodos] = useState<number[]>([]);
-  const [keyToForm, setKeyToForm] = useState(0);
-  const [formDisabled, setFormDisabled] = useState(false);
+  // const [formDisabled, setFormDisabled] = useState(false);
+  const newTodoTitleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getTodos()
@@ -109,7 +109,7 @@ export const App: React.FC = () => {
       })
       .finally(() => {
         setWaitingTodos(current => current.filter(item => item !== id));
-        setKeyToForm(current => current + 1);
+        newTodoTitleRef.current?.focus();
       });
   };
 
@@ -130,7 +130,9 @@ export const App: React.FC = () => {
       userId: 0,
     });
 
-    setFormDisabled(true);
+    if (newTodoTitleRef.current) {
+      newTodoTitleRef.current.disabled = true;
+    }
 
     createTodo(normalizedTitle)
       .then(todo => {
@@ -140,8 +142,11 @@ export const App: React.FC = () => {
       .catch(() => setErrorMessage('Unable to add a todo'))
       .finally(() => {
         setTempTodo(null);
-        setKeyToForm(current => current + 1);
-        setFormDisabled(false);
+        if (newTodoTitleRef.current) {
+          newTodoTitleRef.current.disabled = false;
+        }
+
+        newTodoTitleRef.current?.focus();
       });
   };
 
@@ -180,7 +185,7 @@ export const App: React.FC = () => {
           )}
 
           {/* Add a todo on form submit */}
-          <form onSubmit={handleSubmit} key={keyToForm}>
+          <form onSubmit={handleSubmit}>
             <input
               data-cy="NewTodoField"
               type="text"
@@ -189,7 +194,8 @@ export const App: React.FC = () => {
               value={newTitle}
               onChange={event => setNewTitle(event.target.value)}
               autoFocus
-              disabled={formDisabled}
+              // disabled={formDisabled}
+              ref={newTodoTitleRef}
             />
           </form>
         </header>
