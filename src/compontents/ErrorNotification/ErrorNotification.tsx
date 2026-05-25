@@ -1,4 +1,5 @@
 import classNames from 'classnames';
+import { useEffect } from 'react';
 
 type ErrorNotificationProps = {
   errorMessage: string;
@@ -9,6 +10,18 @@ export function ErrorNotification({
   errorMessage,
   resetError,
 }: ErrorNotificationProps) {
+  useEffect(() => {
+    if (!errorMessage) {
+      return;
+    }
+
+    const timerId = setTimeout(() => {
+      resetError();
+    }, 3000);
+
+    return () => clearTimeout(timerId);
+  }, [errorMessage, resetError]);
+
   return (
     <div
       data-cy="ErrorNotification"

@@ -14,35 +14,23 @@ import classNames from 'classnames';
 import { ErrorNotification } from './compontents/ErrorNotification';
 import { Filter } from './compontents/Filter';
 import { TodoList } from './compontents/TodoList';
+import { Errors } from './types/Errors';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [filterBy, setFilterBy] = useState<Filters>(Filters.all);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState<Errors>(Errors.Default);
   const [newTitle, setNewTitle] = useState('');
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
-  const [waitingTodos, setWaitingTodos] = useState<number[]>([]);
-  // const [formDisabled, setFormDisabled] = useState(false);
+  const [processingIds, setProcessingIds] = useState<number[]>([]);
   const newTodoTitleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getTodos()
       .then(setTodos)
-      .catch(() => setErrorMessage('Unable to load todos'))
+      .catch(() => setErrorMessage(Errors.UnableLoad))
       .finally();
   }, []);
-
-  useEffect(() => {
-    if (!errorMessage) {
-      return;
-    }
-
-    const timerId = setTimeout(() => {
-      setErrorMessage('');
-    }, 3000);
-
-    return () => clearTimeout(timerId);
-  }, [errorMessage]);
 
   if (!USER_ID) {
     return <UserWarning />;
@@ -73,9 +61,11 @@ export const App: React.FC = () => {
   const activeTodos = getActiveTodos(todos);
   const isAllCompleted = activeTodos.length === 0;
   const completedTodos = todos.length - activeTodos.length;
+  const isDisabled = completedTodos < 1;
+  const isShowHeaderAndFooter = todos.length > 0;
 
   const handleEditTodo = (id: number, body: Partial<Todo>) => {
-    setWaitingTodos(current => [...current, id]);
+    setProcessingIds(current => [...current, id]);
 
     return patchTodo(id, body)
       .then(newTodo => {
@@ -90,25 +80,25 @@ export const App: React.FC = () => {
         );
       })
       .catch(error => {
-        setErrorMessage('Unable to update a todo');
+        setErrorMessage(Errors.UnableUpdate);
         throw error;
       })
       .finally(() => {
-        setWaitingTodos(current => current.filter(item => item !== id));
+        setProcessingIds(current => current.filter(item => item !== id));
       });
   };
 
   const handleDeleteTodo = (id: number) => {
-    setWaitingTodos(current => [...current, id]);
+    setProcessingIds(current => [...current, id]);
     deleteTodo(id)
       .then(() => {
         setTodos(current => current.filter(todo => todo.id !== id));
       })
       .catch(() => {
-        setErrorMessage('Unable to delete a todo');
+        setErrorMessage(Errors.UnableDelete);
       })
       .finally(() => {
-        setWaitingTodos(current => current.filter(item => item !== id));
+        setProcessingIds(current => current.filter(item => item !== id));
         newTodoTitleRef.current?.focus();
       });
   };
@@ -118,7 +108,7 @@ export const App: React.FC = () => {
     const normalizedTitle = newTitle.trim();
 
     if (!normalizedTitle) {
-      setErrorMessage('Title should not be empty');
+      setErrorMessage(Errors.EmptyTitle);
 
       return;
     }
@@ -139,7 +129,7 @@ export const App: React.FC = () => {
         setTodos(current => [...current, todo]);
         setNewTitle('');
       })
-      .catch(() => setErrorMessage('Unable to add a todo'))
+      .catch(() => setErrorMessage(Errors.UnableAdd))
       .finally(() => {
         setTempTodo(null);
         if (newTodoTitleRef.current) {
@@ -149,6 +139,7 @@ export const App: React.FC = () => {
         newTodoTitleRef.current?.focus();
       });
   };
+  // React memo and UseCallback де хендлер йде пропсом
 
   const handleMassiveDelete = () => {
     for (const todo of todos) {
@@ -173,7 +164,7 @@ export const App: React.FC = () => {
       <div className="todoapp__content">
         <header className="todoapp__header">
           {/* this button should have `active` class only if all todos are completed */}
-          {todos.length > 0 && (
+          {isShowHeaderAndFooter && (
             <button
               type="button"
               onClick={handleMassiveEditStatus}
@@ -194,7 +185,6 @@ export const App: React.FC = () => {
               value={newTitle}
               onChange={event => setNewTitle(event.target.value)}
               autoFocus
-              // disabled={formDisabled}
               ref={newTodoTitleRef}
             />
           </form>
@@ -202,14 +192,15 @@ export const App: React.FC = () => {
 
         <TodoList
           todos={filteredTodos}
-          waitingTodos={waitingTodos}
+          waitingTodos={processingIds}
           tempTodo={tempTodo}
           onDelete={handleDeleteTodo}
           onUpdate={handleEditTodo}
         />
 
         {/* Hide the footer if there are no todos */}
-        {todos.length > 0 && (
+        {isShowHeaderAndFooter && (
+          // footer component
           <footer className="todoapp__footer" data-cy="Footer">
             <span className="todo-count" data-cy="TodosCounter">
               {activeTodos.length} items left
@@ -224,7 +215,7 @@ export const App: React.FC = () => {
               className="todoapp__clear-completed"
               data-cy="ClearCompletedButton"
               onClick={handleMassiveDelete}
-              disabled={completedTodos < 1}
+              disabled={isDisabled}
             >
               Clear completed
             </button>
@@ -235,7 +226,7 @@ export const App: React.FC = () => {
       {/* DON'T use conditional rendering to hide the notification */}
       <ErrorNotification
         errorMessage={errorMessage}
-        resetError={() => setErrorMessage('')}
+        resetError={() => setErrorMessage(Errors.Default)}
       />
     </div>
   );
