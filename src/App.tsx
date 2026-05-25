@@ -12,9 +12,9 @@ import {
 import { Filters, Todo } from './types/Todo';
 import classNames from 'classnames';
 import { ErrorNotification } from './compontents/ErrorNotification';
-import { Filter } from './compontents/Filter';
 import { TodoList } from './compontents/TodoList';
 import { Errors } from './types/Errors';
+import { Footer } from './compontents/Footer';
 
 export const App: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -63,6 +63,7 @@ export const App: React.FC = () => {
   const completedTodos = todos.length - activeTodos.length;
   const isDisabled = completedTodos < 1;
   const isShowHeaderAndFooter = todos.length > 0;
+  const activeTodosLength = activeTodos.length;
 
   const handleEditTodo = (id: number, body: Partial<Todo>) => {
     setProcessingIds(current => [...current, id]);
@@ -200,26 +201,13 @@ export const App: React.FC = () => {
 
         {/* Hide the footer if there are no todos */}
         {isShowHeaderAndFooter && (
-          // footer component
-          <footer className="todoapp__footer" data-cy="Footer">
-            <span className="todo-count" data-cy="TodosCounter">
-              {activeTodos.length} items left
-            </span>
-
-            {/* Active link should have the 'selected' class */}
-            <Filter filterBy={filterBy} onFilterChange={setFilterBy} />
-
-            {/* this button should be disabled if there are no completed todos */}
-            <button
-              type="button"
-              className="todoapp__clear-completed"
-              data-cy="ClearCompletedButton"
-              onClick={handleMassiveDelete}
-              disabled={isDisabled}
-            >
-              Clear completed
-            </button>
-          </footer>
+          <Footer
+            filterBy={filterBy}
+            activeTodosLength={activeTodosLength}
+            onFilterChange={setFilterBy}
+            isDisabled={isDisabled}
+            onMassiveDelete={handleMassiveDelete}
+          />
         )}
       </div>
 
